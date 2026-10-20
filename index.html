@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Income tax bands quiz</title>
+<style>
+  :root {
+    --bg: #eef2f5;
+    --surface: #ffffff;
+    --ink: #14213d;
+    --muted: #55627a;
+    --line: #cfd8e3;
+    --accent: #0b6e6a;
+    --accent-ink: #ffffff;
+    --good: #1b7f3b;
+    --good-bg: #e6f4ea;
+    --bad: #b3261e;
+    --bad-bg: #fbeae9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1724;
+      --surface: #182234;
+      --ink: #e8edf5;
+      --muted: #9aa8bf;
+      --line: #2c3a52;
+      --accent: #4fc3bd;
+      --accent-ink: #0f1724;
+      --good: #6fd08c;
+      --good-bg: #17301f;
+      --bad: #ff8f87;
+      --bad-bg: #38201f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.55 Georgia, "Times New Roman", serif;
+  }
+  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.7rem; line-height: 1.2; margin: 8px 0 6px; }
+  h2 { font-size: 1.25rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .sub { color: var(--muted); margin-bottom: 20px; }
+  .ui { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+  .rates, .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .rates summary { cursor: pointer; font-weight: 700; }
+  .rates ul { margin: 10px 0 0; padding-left: 20px; }
+
+  .progress { display: flex; gap: 6px; margin-bottom: 16px; }
+  .progress span {
+    flex: 1; height: 6px; border-radius: 3px; background: var(--line);
+  }
+  .progress span.done { background: var(--accent); }
+  .progress span.now { background: var(--ink); }
+
+  .tag {
+    display: inline-block; font: 600 0.8rem system-ui, sans-serif;
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 2px 10px; margin-bottom: 10px; color: var(--muted);
+  }
+  .income { font-size: 1.6rem; font-weight: 700; margin: 4px 0 12px; }
+
+  fieldset { border: 0; margin: 0 0 12px; padding: 0; }
+  legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+  .opt {
+    display: flex; align-items: center; gap: 12px;
+    border: 2px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
+    font-family: system-ui, sans-serif; font-size: 1rem;
+  }
+  .opt:hover { border-color: var(--accent); }
+  .opt input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+  .opt:has(input:checked) { border-color: var(--accent); }
+  .opt.correct { border-color: var(--good); background: var(--good-bg); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .opt .mark { margin-left: auto; font-weight: 700; }
+  fieldset:disabled .opt { cursor: default; }
+
+  button {
+    font: 600 1rem system-ui, sans-serif;
+    background: var(--accent); color: var(--accent-ink);
+    border: 0; border-radius: 8px; padding: 12px 20px; cursor: pointer;
+  }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.secondary { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+  :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .answer { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .verdict { font: 700 1.05rem system-ui, sans-serif; margin-bottom: 10px; }
+  .verdict.good { color: var(--good); }
+  .verdict.bad { color: var(--bad); }
+
+  .tablewrap { overflow-x: auto; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; font-family: system-ui, sans-serif; font-size: 0.95rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  tr.total td { font-weight: 700; border-bottom: 0; border-top: 2px solid var(--ink); }
+
+  .note { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 0.95rem; margin: 10px 0; }
+  .errors { margin: 8px 0 0; padding-left: 20px; font-size: 0.95rem; }
+  .actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .score { font-size: 2.2rem; font-weight: 700; margin: 4px 0 8px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Income tax bands quiz</h1>
+  <p class="sub">2026/27 rates for England, Wales and Northern Ireland. Income tax only; National Insurance is not included.</p>
+
+  <details class="rates ui">
+    <summary>Rates and bands</summary>
+    <ul>
+      <li>Personal Allowance: £12,570 at 0%</li>
+      <li>Basic rate: next £37,700 of taxable income at 20%</li>
+      <li>Higher rate: taxable income above £37,700, up to £125,140 total income, at 40%</li>
+      <li>Additional rate: income over £125,140 at 45%</li>
+      <li>Allowance falls by £1 for every £2 of income over £100,000</li>
+    </ul>
+  </details>
+
+  <div class="progress" id="progress" aria-hidden="true"></div>
+  <div id="stage" aria-live="polite"></div>
+</main>
+
+<script>
+(function () {
+  var fmt = function (n) { return "£" + n.toLocaleString("en-GB"); };
+
+  var questions = [
+    {
+      kind: "Worked example",
+      income: 60000,
+      worked: true,
+      steps: [
+        ["Personal Allowance", "£12,570 × 0%", "£0"],
+        ["Basic", "£37,700 × 20%", "£7,540"],
+        ["Higher", "(£60,000 − £12,570 − £37,700) = £9,730 × 40%", "£3,892"]
+      ],
+      total: "£11,432",
+      note: "Check: £12,570 + £37,700 + £9,730 = £60,000. The bands must add up to income."
+    },
+    {
+      kind: "Question 1",
+      income: 45000,
+      prompt: "How much income tax is due on £45,000?",
+      options: ["£9,000", "£6,486", "£7,540", "£10,054"],
+      correct: 1,
+      steps: [
+        ["Personal Allowance", "£12,570 × 0%", "£0"],
+        ["Basic", "(£45,000 − £12,570) = £32,430 × 20%", "£6,486"]
+      ],
+      total: "£6,486",
+      note: "Income is below £50,270, so there is no higher-rate tax.",
+      errors: [
+        "£9,000: taxed all £45,000 at 20% and forgot the allowance.",
+        "£7,540: taxed the full £37,700 basic band, but only £32,430 is earned in it.",
+        "£10,054: used £50,270 as the width of the basic band."
+      ]
+    },
+    {
+      kind: "Question 2",
+      income: 110000,
+      prompt: "How much income tax is due on £110,000?",
+      options: ["£31,432", "£35,432", "£33,432", "£44,000"],
+      correct: 2,
+      pre: "Step 1, taper the allowance: income over £100,000 is £10,000, so the allowance falls by £10,000 ÷ 2 = £5,000. Allowance left: £12,570 − £5,000 = £7,570.",
+      steps: [
+        ["Personal Allowance", "£7,570 × 0%", "£0"],
+        ["Basic", "£37,700 × 20%", "£7,540"],
+        ["Higher", "(£110,000 − £7,570 − £37,700) = £64,730 × 40%", "£25,892"]
+      ],
+      total: "£33,432",
+      note: "Check: £7,570 + £37,700 + £64,730 = £110,000. Effective rate: 30.4%.",
+      errors: [
+        "£31,432: ignored the taper and used the full £12,570 allowance.",
+        "£35,432: took £10,000 off the allowance instead of halving it (£5,000).",
+        "£44,000: applied 40% to the whole £110,000."
+      ]
+    },
+    {
+      kind: "Question 3",
+      income: 150000,
+      prompt: "How much income tax is due on £150,000?",
+      options: ["£67,500", "£48,675", "£51,189", "£53,703"],
+      correct: 3,
+      pre: "Step 1, check the allowance: income over £100,000 is £50,000, so the allowance falls by £50,000 ÷ 2 = £25,000. That is more than £12,570, so the allowance is £0. The bands start from the first pound earned.",
+      steps: [
+        ["Personal Allowance", "£0 × 0%", "£0"],
+        ["Basic", "£37,700 × 20%", "£7,540"],
+        ["Higher", "(£125,140 − £37,700) = £87,440 × 40%", "£34,976"],
+        ["Additional", "(£150,000 − £125,140) = £24,860 × 45%", "£11,187"]
+      ],
+      total: "£53,703",
+      note: "Check: £37,700 + £87,440 + £24,860 = £150,000. Effective rate: 35.8%.",
+      errors: [
+        "£67,500: applied 45% to the whole £150,000.",
+        "£48,675: kept the £12,570 allowance, but it is fully withdrawn above £125,140.",
+        "£51,189: started the higher band at £50,270 instead of £37,700."
+      ]
+    }
+  ];
+
+  var stage = document.getElementById("stage");
+  var progress = document.getElementById("progress");
+  var current = 0, score = 0, answered = false;
+
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+
+  function drawProgress() {
+    progress.innerHTML = "";
+    questions.forEach(function (_, i) {
+      var s = document.createElement("span");
+      if (i < current) s.className = "done";
+      else if (i === current) s.className = "now";
+      progress.appendChild(s);
+    });
+  }
+
+  function workingTable(q) {
+    var wrap = el("div", "tablewrap");
+    var rows = q.steps.map(function (s) {
+      return "<tr><td>" + s[0] + "</td><td>" + s[1] + '</td><td class="num">' + s[2] + "</td></tr>";
+    }).join("");
+    wrap.innerHTML =
+      '<table><thead><tr><th>Band</th><th>Calculation</th><th class="num">Tax</th></tr></thead><tbody>' +
+      rows +
+      '<tr class="total"><td>Total</td><td></td><td class="num">' + q.total + "</td></tr></tbody></table>";
+    return wrap;
+  }
+
+  function buildAnswer(q, wasRight) {
+    var box = el("div", "answer");
+    if (!q.worked) {
+      box.appendChild(el("div", "verdict " + (wasRight ? "good" : "bad"),
+        wasRight ? "Correct: " + q.total : "Not quite. The answer is " + q.total + "."));
+    }
+    if (q.pre) box.appendChild(el("p", "note", q.pre));
+    box.appendChild(workingTable(q));
+    if (q.note) box.appendChild(el("p", "note", q.note));
+    if (q.errors) {
+      box.appendChild(el("p", null, "<strong>Common errors</strong>"));
+      var ul = el("ul", "errors");
+      q.errors.forEach(function (t) { ul.appendChild(el("li", null, t)); });
+      box.appendChild(ul);
+    }
+    return box;
+  }
+
+  function render() {
+    drawProgress();
+    stage.innerHTML = "";
+    answered = false;
+    var q = questions[current];
+    var card = el("section", "card");
+    card.appendChild(el("span", "tag", q.kind));
+    card.appendChild(el("div", "income", "Income: " + fmt(q.income)));
+
+    var isLast = current === questions.length - 1;
+    var actions = el("div", "actions");
+    var next = el("button", null, isLast ? "See score" : "Next");
+    next.type = "button";
+    next.addEventListener("click", function () { current++; current < questions.length ? render() : finish(); });
+
+    if (q.worked) {
+      card.appendChild(el("p", null, "Work through this example first. It shows the method you will use in the questions."));
+      card.appendChild(buildAnswer(q));
+      actions.appendChild(next);
+      next.textContent = "Start questions";
+      card.appendChild(actions);
+      stage.appendChild(card);
+      return;
+    }
+
+    var form = document.createElement("form");
+    var fs = el("fieldset");
+    fs.appendChild(el("legend", null, q.prompt));
+    q.options.forEach(function (text, i) {
+      var label = el("label", "opt");
+      var input = document.createElement("input");
+      input.type = "radio"; input.name = "choice"; input.value = i;
+      label.appendChild(input);
+      label.appendChild(el("span", null, "<strong>" + "ABCD"[i] + ")</strong> " + text));
+      fs.appendChild(label);
+    });
+    form.appendChild(fs);
+
+    var check = el("button", null, "Check answer");
+    check.type = "submit";
+    check.disabled = true;
+    fs.addEventListener("change", function () { check.disabled = false; });
+    form.appendChild(check);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (answered) return;
+      var picked = form.querySelector("input:checked");
+      if (!picked) return;
+      answered = true;
+      var idx = parseInt(picked.value, 10);
+      var right = idx === q.correct;
+      if (right) score++;
+      fs.disabled = true;
+      check.hidden = true;
+      var labels = fs.querySelectorAll(".opt");
+      labels[q.correct].classList.add("correct");
+      labels[q.correct].appendChild(el("span", "mark", "Correct"));
+      if (!right) {
+        labels[idx].classList.add("wrong");
+        labels[idx].appendChild(el("span", "mark", "Your answer"));
+      }
+      card.appendChild(buildAnswer(q, right));
+      actions.appendChild(next);
+      card.appendChild(actions);
+      next.focus();
+    });
+
+    card.appendChild(form);
+    stage.appendChild(card);
+  }
+
+  function finish() {
+    progress.innerHTML = "";
+    stage.innerHTML = "";
+    var total = questions.filter(function (q) { return !q.worked; }).length;
+    var card = el("section", "card");
+    card.appendChild(el("span", "tag", "Finished"));
+    card.appendChild(el("div", "score", score + " / " + total));
+    var msg = score === total
+      ? "Full marks. You can apply the bands and the allowance taper."
+      : "Review the working above, especially how the allowance and the £37,700 basic band fit together.";
+    card.appendChild(el("p", null, msg));
+    var again = el("button", "secondary", "Try again");
+    again.type = "button";
+    again.addEventListener("click", function () { current = 0; score = 0; render(); });
+    card.appendChild(again);
+    stage.appendChild(card);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
